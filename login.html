@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - DuDonut</title>
+
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
+
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif; 
+            background-image: url(img/bg.png);
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased selection:bg-pink-200">
+    <div id="root" class="h-full flex items-center justify-center p-4"></div>
+
+    <script type="text/babel">
+        const SUPABASE_URL = 'https://liryzeceojiqwukbusnp.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_XifJlJ5R_fugxolUGhMUsg_PruMWstF';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        const { useState, useEffect } = React;
+
+        const LoginApp = () => {
+            const [username, setUsername] = useState('');
+            const [password, setPassword] = useState('');
+            const [errorMsg, setErrorMsg] = useState('');
+            const [loading, setLoading] = useState(false);
+
+            useEffect(() => {
+                const activeUser = localStorage.getItem('dudonut_active_cashier');
+                if (activeUser) {
+                    const parsed = JSON.parse(activeUser);
+                    window.location.href = parsed.role === 'admin' ? 'dashboard.html' : 'index.html';
+                }
+            }, []);
+
+            const handleLogin = async (e) => {
+                e.preventDefault();
+                setErrorMsg('');
+                setLoading(true);
+
+                const { data: foundUser, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .ilike('username', username.trim())
+                    .eq('password', password)
+                    .maybeSingle();
+
+                setLoading(false);
+
+                if (error || !foundUser) {
+                    setErrorMsg('Username atau password salah!');
+                    return;
+                }
+
+                localStorage.setItem('dudonut_active_cashier', JSON.stringify({
+                    username: foundUser.username,
+                    name: foundUser.name,
+                    role: foundUser.role,
+                    loginTime: new Date().toISOString()
+                }));
+
+                window.location.href = foundUser.role === 'admin' ? 'dashboard.html' : 'index.html';
+            };
+
+            return (
+                <div className="bg-white/95 backdrop-blur-md rounded-3xl p-8 shadow-xl border border-gray-100 max-w-md w-full">
+                    <div className="flex flex-col items-center mb-6">
+                        <img src="img/logo.png" alt="DuDonut Logo" className="h-16 w-auto object-contain mb-3 drop-shadow-sm select-none" />
+                        <h1 className="text-2xl font-black text-gray-800 tracking-tight">Log In</h1>
+                        <p className="text-xs text-gray-500 font-medium mt-1">Silakan masuk dengan akun Admin atau Kasir</p>
+                    </div>
+
+                    {errorMsg && (
+                        <div className="mb-4 bg-red-50 border border-red-200 text-red-600 text-xs font-semibold px-4 py-3 rounded-xl flex items-center space-x-2">
+                            <span>{errorMsg}</span>
+                        </div>
+                    )}
+
+                    <form onSubmit={handleLogin} className="space-y-4">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Username</label>
+                            <input 
+                                type="text"
+                                required
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                placeholder="Masukkan username"
+                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:bg-white"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Password</label>
+                            <input 
+                                type="password"
+                                required
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="Masukkan password"
+                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:bg-white"
+                            />
+                        </div>
+
+                        <button 
+                            type="submit" 
+                            disabled={loading}
+                            className="w-full mt-2 bg-[#ff1493] text-white font-bold py-3.5 rounded-xl hover:bg-pink-600 transition-all shadow-md text-sm disabled:opacity-60"
+                        >
+                            {loading ? 'Memeriksa...' : 'Masuk'}
+                        </button>
+                    </form>
+
+                    <div className="mt-6 pt-4 border-t border-gray-100 text-center">
+                        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Akun Demo Login</p>
+                        <div className="flex justify-center gap-2 text-xs flex-wrap">
+                            <span className="bg-pink-50 text-[#ff1493] font-semibold px-2.5 py-1 rounded-md border border-pink-100">admin (pw: admin123)</span>
+                            <span className="bg-pink-50 text-[#ff1493] font-semibold px-2.5 py-1 rounded-md border border-pink-100">ridho410 (pw: dd123)</span>
+                            <span className="bg-pink-50 text-[#ff1493] font-semibold px-2.5 py-1 rounded-md border border-pink-100">yuriko59 (pw: dd123)</span>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<LoginApp />);
+    </script>
+</body>
+</html>
